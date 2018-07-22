@@ -4,7 +4,6 @@ Created on Jul 20, 2018
 @author: Vishruth
 '''
 from pymongo import MongoClient
-from pprint import pprint
 
 class Database(object):
     '''

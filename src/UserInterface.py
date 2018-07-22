@@ -1,7 +1,7 @@
-#!/usr/local/bin/python2.7
+#!/usr/local/bin/python3.6
 # encoding: utf-8
-from src.Database import Database
-from src.Video import VideoSegment, Video
+from Database import Database
+from Video import VideoSegment, Video
 import os
 import random
 from pprint import pprint
