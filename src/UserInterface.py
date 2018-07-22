@@ -1,7 +1,7 @@
-#!/usr/local/bin/python2.7
+#!/usr/local/bin/python3.6
 # encoding: utf-8
-from src.Database import Database
-from src.Video import VideoSegment, Video
+from Database import Database
+from Video import VideoSegment, Video
 import os
 import random
 from pprint import pprint
@@ -64,7 +64,7 @@ def ingest_video():
     '''
     while True:
         try:
-            video_path = input("Enter the path to the video to be ingested: ")
+            video_path = str(input("Enter the path to the video to be ingested: "))
             if not os.path.exists(video_path):
                 raise ValueError
             else:
@@ -114,8 +114,8 @@ def search_by_objects():
         try:
             videos_dict = {}
             previous_annotation_text = ""
-            class_name = input("Object to search for: ")
-            should_annotate = input("Do you want the video annotated? (y/n): ")
+            class_name = str(input("Object to search for: "))
+            should_annotate = str(input("Do you want the video annotated? (y/n): "))
             should_annotate = (should_annotate.lower() == "y")
             all_segments = Database.get_all_segments_for_object(class_name)
             if all_segments:
@@ -160,7 +160,7 @@ def search_by_time():
     print("Searching a video by time")
     while True:
         try:
-            video_id = input("Video ID to search for: ")
+            video_id = str(input("Video ID to search for: "))
             if video_id not in Database.list_all_video_ids():
                 raise ValueError
             else:
@@ -171,7 +171,7 @@ def search_by_time():
                 output_video = Video("Search_%s_%d-%d" % (video_id, start_time, end_time))
                 previous_annotation_text = ""
                 video_segment = VideoSegment(video_id, start_time, end_time)
-                should_annotate = input("Do you want the video annotated? (y/n): ")
+                should_annotate = str(input("Do you want the video annotated? (y/n): "))
                 should_annotate = (should_annotate.lower() == "y")
                 if should_annotate:
                     all_segments = Database.get_all_segments_by_time(video_id, start_time, end_time)
