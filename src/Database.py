@@ -68,12 +68,12 @@ class Database(object):
             return None
     
     @staticmethod
-    def find_second_object():
+    def get_all_segments_by_time(video_id, start_time, end_time):
         if Database.annotations == None:
             Database.connect_to_db()
         
         if Database.annotations:
-            return Database.annotations.find({"object_id": "1"})
+            return Database.annotations.find({"video_id": video_id, "timestamp_ms": {"$gte": start_time}, "timestamp_ms": {"$lte": end_time}})
         else:
             return None
     

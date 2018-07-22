@@ -35,14 +35,15 @@ class Video(object):
         if not self.clip:
             self.clip = video_segment.get_videoclip()
         else:
+            old_clip = self.clip
             self.clip = concatenate_videoclips([self.clip, video_segment.get_videoclip()])
+            old_clip.close()
     
     def write_videoclip_to_file(self):
         try:
             directory = "..\\output\\"
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            print("here")
             os.remove("..\\output\\%s.mp4" % self.description)
         except OSError:
             pass
@@ -60,11 +61,6 @@ class VideoSegment(object):
         self.clip = VideoFileClip("..\\cache\\"+video_id+".mp4").subclip(start_time, end_time)
         self.left, self.right, self.top, self.bottom = 0, 0, 0, 0
         self.duration = end_time - start_time
-        VideoSegment.colors = {
-            'red': [255,0,0],
-            'green': [0,255,0],
-            'blue': [0,0,255]
-            }
     
     @staticmethod
     def draw_rectangle(frame, left, right, top, bottom, color):
@@ -82,11 +78,22 @@ class VideoSegment(object):
         
         return frame
     
-    def annotate_videoclip(self, left, right, top, bottom, text):
-        drawing_color, drawing_color_rgb = random.choice(list(VideoSegment.colors.items()))
-        textclip = TextClip(" "+text,fontsize=16,color=drawing_color).set_position((0.1,0.2), relative=True).set_duration(self.duration)
+    def annotate_videoclip(self, left, right, top, bottom, text, color, color_rgb):
+        textclip = TextClip(" "+text,fontsize=16,color=color).set_position((left, top), relative=True).set_duration(self.duration)
+        old_clip = self.clip
         self.clip = CompositeVideoClip([self.clip, textclip]).fl_image(
-            lambda image: VideoSegment.draw_rectangle(image, left, right, top, bottom, drawing_color_rgb))
+            lambda image: VideoSegment.draw_rectangle(image, left, right, top, bottom, color_rgb))
+        textclip.close()
+        old_clip.close()
+        return self.clip
+    
+    def annotate_videoclip_at_time(self, timestamp, left, right, top, bottom, text, color, color_rgb):
+        textclip = TextClip(" "+text,fontsize=16,color=color).set_position((left, top), relative=True).set_duration(1).set_start(timestamp)
+        old_clip = self.clip
+        self.clip = CompositeVideoClip([self.clip, textclip]).fl_image(
+            lambda image: VideoSegment.draw_rectangle(image, left, right, top, bottom, color_rgb))
+        textclip.close()
+        old_clip.close()
         return self.clip
     
     def get_videoclip(self):

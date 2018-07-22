@@ -3,9 +3,16 @@
 from src.Database import Database
 from src.Video import VideoSegment, Video
 import os
+import random
 from pprint import pprint
 
 NUM_ARGS_PER_CSV_LINE = 8
+
+colors = {
+        'red': [255,0,0],
+        'green': [0,255,0],
+        'blue': [0,0,255]
+        }
 
 def menu():
     '''
@@ -71,7 +78,9 @@ def ingest_video():
                             if len(args) == NUM_ARGS_PER_CSV_LINE:
                                 video_name = os.path.basename(video_path)
                                 video_id = os.path.splitext(video_name)[0]
-                                Database.add_document_to_db(video_id, *args)
+                                timestamp_ms, class_name, object_id, object_presence, xmin, xmax, ymin, ymax =\
+                                int(args[0]), args[1], args[2], args[3], args[4], args[5], args, args[7] 
+                                Database.add_document_to_db(video_id, timestamp_ms, class_name, object_id, object_presence, xmin, xmax, ymin, ymax)
                             else:
                                 print("Line %s was invalid" % line)
                                 raise ValueError
@@ -101,6 +110,7 @@ def search_by_objects():
     while True:
         try:
             videos_dict = {}
+            previous_annotation_text = ""
             class_name = input("Object to search for: ")
             all_segments = Database.get_all_segments_for_object(class_name)
             if all_segments:
@@ -116,8 +126,14 @@ def search_by_objects():
                         videos_dict[(video_id, start_time, end_time)] = video_segment
                     
                     left, right, top, bottom = float(segment["xmin"]), float(segment["xmax"]), float(segment["ymin"]), float(segment["ymax"])
-                    annotation_text = segment["class_name"] + segment["object_id"] 
-                    video_segment.annotate_videoclip(left, right, top, bottom, annotation_text)
+                    annotation_text = segment["class_name"] + segment["object_id"]
+                    
+                    # If the object is not the same as before, choose a new annotation color at random.
+                    if annotation_text != previous_annotation_text:
+                        previous_annotation_text = annotation_text
+                        color, color_rgb = random.choice(list(colors.items()))
+                    
+                    video_segment.annotate_videoclip(left, right, top, bottom, annotation_text, color, color_rgb)
                     output_video.add_segment(video_segment)
                 output_video.write_videoclip_to_file()
                 break
@@ -128,18 +144,53 @@ def search_by_objects():
             print("That was not a valid option.")
             print(e)
 
-    '''VideoSegment.ingest_video("..\\data\\8gANMceD-Ag.mp4")
-    segment = VideoSegment("8gANMceD-Ag", 10, 20)
-    left, right, top, bottom = 0.1, 0.6, 0.2, 0.4
-    segment.annotate_videoclip(left, right, top, bottom, "Giraffe")
-    segment.write_videoclip_to_file()'''
+    quit_program()
     
 def search_by_time():
     '''
     Returns a video segment for a given video ID and time range.
     Allows the user to choose to see the raw video or the annotated version.
     '''
-    print("Searching by time")
+    print("Searching a video by time")
+    while True:
+        try:
+            video_id = input("Video ID to search for: ")
+            if video_id not in Database.list_all_video_ids():
+                raise ValueError
+            else:
+                start_time = input("Start time in ms: ")
+                start_time = int(start_time)/1000 # In seconds
+                end_time = input("End time in ms: ")
+                end_time = int(end_time)/1000 # In seconds
+                output_video = Video("Search_%s_%d-%d" % (video_id, start_time, end_time))
+                previous_annotation_text = ""
+                video_segment = VideoSegment(video_id, start_time, end_time)
+                all_segments = Database.get_all_segments_by_time(video_id, start_time, end_time)
+                if all_segments:
+                    for segment in all_segments:
+                        pprint(segment)
+                        left, right, top, bottom = float(segment["xmin"]), float(segment["xmax"]), float(segment["ymin"]), float(segment["ymax"])
+                        annotation_text = segment["class_name"] + segment["object_id"]
+                        
+                        # If the object is not the same as before, choose a new annotation color at random.
+                        if annotation_text != previous_annotation_text:
+                            previous_annotation_text = annotation_text
+                            color, color_rgb = random.choice(list(colors.items()))
+                        
+                        relative_start_time = int(segment["timestamp_ms"])/1000 - start_time
+                        video_segment.annotate_videoclip_at_time(relative_start_time, left, right, top, bottom, annotation_text, color, color_rgb)
+                        
+                    output_video.add_segment(video_segment)
+                    output_video.write_videoclip_to_file()
+                    break
+                else:
+                    raise ValueError
+            
+        except ValueError as e:
+                print("That was not a valid option.")
+                print(e)
+        
+    quit_program()
 
 def clear_database():
     '''
