@@ -36,9 +36,7 @@ class Video(object):
         if not self.clip:
             self.clip = video_segment.get_videoclip()
         else:
-            old_clip = self.clip
             self.clip = concatenate_videoclips([self.clip, video_segment.get_videoclip()])
-            old_clip.close()
     
     def write_videoclip_to_file(self):
         if not self.clip:
@@ -63,6 +61,8 @@ class Video(object):
             print(e.filename)
             print(e.strerror)
             print("Error writing to file")
+        except Exception as e:
+            print(e)
 
 class VideoSegment(object):
     '''
@@ -95,20 +95,14 @@ class VideoSegment(object):
     
     def annotate_videoclip(self, left, right, top, bottom, text, color, color_rgb):
         textclip = TextClip(" "+text,fontsize=16,color=color).set_position((left, top), relative=True).set_duration(self.duration)
-        old_clip = self.clip
         self.clip = CompositeVideoClip([self.clip, textclip]).fl_image(
             lambda image: VideoSegment.draw_rectangle(image, left, right, top, bottom, color_rgb))
-        textclip.close()
-        old_clip.close()
         return self.clip
     
     def annotate_videoclip_at_time(self, timestamp, left, right, top, bottom, text, color, color_rgb):
         textclip = TextClip(" "+text,fontsize=16,color=color).set_position((left, top), relative=True).set_duration(1).set_start(timestamp)
-        old_clip = self.clip
         self.clip = CompositeVideoClip([self.clip, textclip]).fl_image(
             lambda image: VideoSegment.draw_rectangle(image, left, right, top, bottom, color_rgb))
-        textclip.close()
-        old_clip.close()
         return self.clip
     
     def get_videoclip(self):
