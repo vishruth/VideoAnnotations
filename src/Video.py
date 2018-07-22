@@ -4,7 +4,6 @@ Created on Jul 20, 2018
 @author: Vishruth
 '''
 import os
-import random
 from shutil import copyfile
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.VideoClip import TextClip
@@ -23,7 +22,9 @@ class Video(object):
     @staticmethod
     def ingest_video(file_path):
         try:
-            copyfile(file_path, "..\\cache\\"+os.path.basename(file_path))
+            # Copy file to the cache directory (one level above current)
+            destination_path = os.path.join("..", "cache", os.path.basename(file_path))
+            copyfile(file_path, destination_path)
             # Add file_path and file_id to DB
         except OSError as e:
             print(e.errno)
@@ -40,15 +41,28 @@ class Video(object):
             old_clip.close()
     
     def write_videoclip_to_file(self):
+        if not self.clip:
+            print("Clip empty, video not written")
+            return
         try:
-            directory = "..\\output\\"
+            directory = os.path.join("..", "output")
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            os.remove("..\\output\\%s.mp4" % self.description)
+            output_filename = "%s.mp4" % self.description
+            os.remove(os.path.join("..", "output", output_filename))
         except OSError:
             pass
-        print("Writing to file: ..\\output\\%s.mp4" % self.description)
-        self.clip.write_videofile("..\\output\\%s.mp4" % self.description)
+        try:
+            output_filename = "%s.mp4" % self.description
+            output_filepath = os.path.join("..", "output", output_filename)
+            print("Writing to file: %s" % output_filepath)
+            self.clip.write_videofile(output_filepath)
+        except OSError as e:
+            print(e.errno)
+            print(os.getcwd())
+            print(e.filename)
+            print(e.strerror)
+            print("Error writing to file")
 
 class VideoSegment(object):
     '''
@@ -58,7 +72,8 @@ class VideoSegment(object):
         '''
         Constructor
         '''
-        self.clip = VideoFileClip("..\\cache\\"+video_id+".mp4").subclip(start_time, end_time)
+        video_path = os.path.join("..", "cache", "%s.mp4" % video_id)
+        self.clip = VideoFileClip(video_path).subclip(start_time, end_time)
         self.left, self.right, self.top, self.bottom = 0, 0, 0, 0
         self.duration = end_time - start_time
     

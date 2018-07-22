@@ -11,7 +11,10 @@ NUM_ARGS_PER_CSV_LINE = 8
 colors = {
         'red': [255,0,0],
         'green': [0,255,0],
-        'blue': [0,0,255]
+        'blue': [0,0,255],
+        'yellow': [255,255,0],
+        'aqua': [0,255,255],
+        'fuchsia': [255,0,255],
         }
 
 def menu():
@@ -112,6 +115,8 @@ def search_by_objects():
             videos_dict = {}
             previous_annotation_text = ""
             class_name = input("Object to search for: ")
+            should_annotate = input("Do you want the video annotated? (y/n): ")
+            should_annotate = (should_annotate.lower() == "y")
             all_segments = Database.get_all_segments_for_object(class_name)
             if all_segments:
                 output_video = Video("Search_%s" % class_name)
@@ -125,15 +130,16 @@ def search_by_objects():
                         video_segment = VideoSegment(video_id, start_time, end_time)
                         videos_dict[(video_id, start_time, end_time)] = video_segment
                     
-                    left, right, top, bottom = float(segment["xmin"]), float(segment["xmax"]), float(segment["ymin"]), float(segment["ymax"])
-                    annotation_text = segment["class_name"] + segment["object_id"]
-                    
-                    # If the object is not the same as before, choose a new annotation color at random.
-                    if annotation_text != previous_annotation_text:
-                        previous_annotation_text = annotation_text
-                        color, color_rgb = random.choice(list(colors.items()))
-                    
-                    video_segment.annotate_videoclip(left, right, top, bottom, annotation_text, color, color_rgb)
+                    if should_annotate:
+                        left, right, top, bottom = float(segment["xmin"]), float(segment["xmax"]), float(segment["ymin"]), float(segment["ymax"])
+                        annotation_text = segment["class_name"] + segment["object_id"]
+                        
+                        # If the object is not the same as before, choose a new annotation color at random.
+                        if annotation_text != previous_annotation_text:
+                            previous_annotation_text = annotation_text
+                            color, color_rgb = random.choice(list(colors.items()))
+                        
+                        video_segment.annotate_videoclip(left, right, top, bottom, annotation_text, color, color_rgb)
                     output_video.add_segment(video_segment)
                 output_video.write_videoclip_to_file()
                 break
@@ -165,26 +171,33 @@ def search_by_time():
                 output_video = Video("Search_%s_%d-%d" % (video_id, start_time, end_time))
                 previous_annotation_text = ""
                 video_segment = VideoSegment(video_id, start_time, end_time)
-                all_segments = Database.get_all_segments_by_time(video_id, start_time, end_time)
-                if all_segments:
-                    for segment in all_segments:
-                        pprint(segment)
-                        left, right, top, bottom = float(segment["xmin"]), float(segment["xmax"]), float(segment["ymin"]), float(segment["ymax"])
-                        annotation_text = segment["class_name"] + segment["object_id"]
-                        
-                        # If the object is not the same as before, choose a new annotation color at random.
-                        if annotation_text != previous_annotation_text:
-                            previous_annotation_text = annotation_text
-                            color, color_rgb = random.choice(list(colors.items()))
-                        
-                        relative_start_time = int(segment["timestamp_ms"])/1000 - start_time
-                        video_segment.annotate_videoclip_at_time(relative_start_time, left, right, top, bottom, annotation_text, color, color_rgb)
-                        
+                should_annotate = input("Do you want the video annotated? (y/n): ")
+                should_annotate = (should_annotate.lower() == "y")
+                if should_annotate:
+                    all_segments = Database.get_all_segments_by_time(video_id, start_time, end_time)
+                    if all_segments:
+                        for segment in all_segments:
+                            pprint(segment)
+                            left, right, top, bottom = float(segment["xmin"]), float(segment["xmax"]), float(segment["ymin"]), float(segment["ymax"])
+                            annotation_text = segment["class_name"] + segment["object_id"]
+                            
+                            # If the object is not the same as before, choose a new annotation color at random.
+                            if annotation_text != previous_annotation_text:
+                                previous_annotation_text = annotation_text
+                                color, color_rgb = random.choice(list(colors.items()))
+                            
+                            relative_start_time = int(segment["timestamp_ms"])/1000 - start_time
+                            video_segment.annotate_videoclip_at_time(relative_start_time, left, right, top, bottom, annotation_text, color, color_rgb)
+                            
+                        output_video.add_segment(video_segment)
+                        output_video.write_videoclip_to_file()
+                        break
+                    else:
+                        raise ValueError
+                else:
                     output_video.add_segment(video_segment)
                     output_video.write_videoclip_to_file()
                     break
-                else:
-                    raise ValueError
             
         except ValueError as e:
                 print("That was not a valid option.")
