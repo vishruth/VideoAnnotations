@@ -79,7 +79,7 @@ def ingest_video():
                                 video_name = os.path.basename(video_path)
                                 video_id = os.path.splitext(video_name)[0]
                                 timestamp_ms, class_name, object_id, object_presence, xmin, xmax, ymin, ymax =\
-                                int(args[0]), args[1], args[2], args[3], args[4], args[5], args, args[7] 
+                                int(args[0]), args[1], args[2], args[3], args[4], args[5], args[6], args[7] 
                                 Database.add_document_to_db(video_id, timestamp_ms, class_name, object_id, object_presence, xmin, xmax, ymin, ymax)
                             else:
                                 print("Line %s was invalid" % line)
