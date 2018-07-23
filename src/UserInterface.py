@@ -4,7 +4,6 @@ from Database import Database
 from Video import VideoSegment, Video
 import os
 import random
-from pprint import pprint
 
 NUM_ARGS_PER_CSV_LINE = 8
 
@@ -82,8 +81,11 @@ def ingest_video():
                                 video_name = os.path.basename(video_path)
                                 video_id = os.path.splitext(video_name)[0]
                                 timestamp_ms, class_name, object_id, object_presence, xmin, xmax, ymin, ymax =\
-                                int(args[0]), args[1], args[2], args[3], args[4], args[5], args[6], args[7] 
-                                Database.add_document_to_db(video_id, timestamp_ms, class_name, object_id, object_presence, xmin, xmax, ymin, ymax)
+                                int(args[0]), args[1], args[2], args[3], args[4], args[5], args[6], args[7]
+                                
+                                # Only add to the database if an object is present.
+                                if object_presence == "present": 
+                                    Database.add_document_to_db(video_id, timestamp_ms, class_name, object_id, xmin, xmax, ymin, ymax)
                             else:
                                 print("Line %s was invalid" % line)
                                 raise ValueError
@@ -168,8 +170,8 @@ def search_by_time():
                 start_time = int(start_time)/1000 # In seconds
                 end_time = input("End time in ms: ")
                 end_time = int(end_time)/1000 # In seconds
-                output_video = Video("Search_%s_%d-%d" % (video_id, start_time, end_time))
                 previous_annotation_text = ""
+                output_video = Video("Search_%s_%d-%d" % (video_id, start_time, end_time))
                 video_segment = VideoSegment(video_id, start_time, end_time)
                 should_annotate = str(input("Do you want the video annotated? (y/n): "))
                 should_annotate = (should_annotate.lower() == "y")
@@ -177,7 +179,6 @@ def search_by_time():
                     all_segments = Database.get_all_segments_by_time(video_id, start_time, end_time)
                     if all_segments:
                         for segment in all_segments:
-                            pprint(segment)
                             left, right, top, bottom = float(segment["xmin"]), float(segment["xmax"]), float(segment["ymin"]), float(segment["ymax"])
                             annotation_text = segment["class_name"] + segment["object_id"]
                             
@@ -188,16 +189,11 @@ def search_by_time():
                             
                             relative_start_time = int(segment["timestamp_ms"])/1000 - start_time
                             video_segment.annotate_videoclip_at_time(relative_start_time, left, right, top, bottom, annotation_text, color, color_rgb)
-                            
-                        output_video.add_segment(video_segment)
-                        output_video.write_videoclip_to_file()
-                        break
                     else:
-                        raise ValueError
-                else:
-                    output_video.add_segment(video_segment)
-                    output_video.write_videoclip_to_file()
-                    break
+                        print("No annotations found in selected time window")
+                output_video.add_segment(video_segment)
+                output_video.write_videoclip_to_file()
+                break
             
         except ValueError as e:
                 print("That was not a valid option.")

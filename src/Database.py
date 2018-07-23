@@ -24,7 +24,7 @@ class Database(object):
         Database.annotations = db[Database.collectionname]
     
     @staticmethod
-    def add_document_to_db(video_id, timestamp_ms, class_name, object_id, object_presence, xmin, xmax, ymin, ymax):
+    def add_document_to_db(video_id, timestamp_ms, class_name, object_id, xmin, xmax, ymin, ymax):
         '''
         returns: whether or not DB operation was successful
         '''
@@ -38,7 +38,6 @@ class Database(object):
                       "timestamp_ms": timestamp_ms,
                       "class_name": class_name,
                       "object_id": object_id,
-                      "object_presence": object_presence,
                       "xmin": xmin,
                       "xmax": xmax,
                       "ymin": ymin,
@@ -62,7 +61,7 @@ class Database(object):
             Database.connect_to_db()
         
         if Database.annotations:
-            return Database.annotations.find({"class_name": class_name, "object_presence": "present"})
+            return Database.annotations.find({"class_name": class_name})
         else:
             return None
     
@@ -71,8 +70,10 @@ class Database(object):
         if Database.annotations == None:
             Database.connect_to_db()
         
+        start_time_ms, end_time_ms = start_time*1000, end_time*1000
+        
         if Database.annotations:
-            return Database.annotations.find({"video_id": video_id, "timestamp_ms": {"$gte": start_time}, "timestamp_ms": {"$lte": end_time}})
+            return Database.annotations.find({"video_id": video_id, "timestamp_ms": {"$gte": start_time_ms, "$lte": end_time_ms}})
         else:
             return None
     
